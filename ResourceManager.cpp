@@ -1,4 +1,4 @@
-#include "ResourceManager.h"
+﻿#include "ResourceManager.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -42,7 +42,7 @@ bool ResourceManager::IsDuplicate(const string& name) {
 bool ResourceManager::AddFile(const string& name, long long size, int catId, int ownerId) {
     regex sysSymbols("[\\\\/:*?\"<>|]");
     if (regex_search(name, sysSymbols)) {
-        cerr << "[ERROR] Name contain system symbols!" << endl;
+        cerr << "[Ш] мя содержит недопустимые символы!" << endl;
         return false;
     }
     vector<string> whitelist = {".exe", ".txt", ".pdf"};
@@ -54,11 +54,11 @@ bool ResourceManager::AddFile(const string& name, long long size, int catId, int
         }
     }
     if (!validExt) {
-        cerr << "[ERROR] Extension is forbidden! (.exe, .txt, .pdf)" << endl;
+        cerr << "[Ш] асширение запрещено! опустимы: .exe, .txt, .pdf" << endl;
         return false;
     }
     if (IsDuplicate(name)) {
-        cerr << "[ERROR] Duplicate file name!" << endl;
+        cerr << "[Ш] айл с таким именем уже существует!" << endl;
         return false;
     }
     SQLHSTMT hStmt;
@@ -72,8 +72,8 @@ bool ResourceManager::AddFile(const string& name, long long size, int catId, int
     SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &catId, 0, NULL);
     SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &ownerId, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "[SUCCESS] Added file: " << name << endl;
-        LogAction("Added file: " + name);
+        cout << "[СХ] айл добавлен: " << name << endl;
+        LogAction("обавлен файл: " + name);
         SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
         return true;
     }
@@ -93,7 +93,7 @@ void ResourceManager::SearchByName(const string& partName) {
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
         int w = GetMaxNameLength() + 5;
         if (w < 20) w = 20;
-        cout << left << setw(5) << "ID" << setw(w) << "Name" << setw(10) << "Size" << endl;
+        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << endl;
         cout << string(w + 15, '-') << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -119,7 +119,7 @@ void ResourceManager::GetFiles(const string& orderBy) {
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS))) {
         int w = GetMaxNameLength() + 5;
         if (w < 20) w = 20;
-        cout << left << setw(5) << "ID" << setw(w) << "Name" << setw(10) << "Size" << endl;
+        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << endl;
         cout << string(w + 15, '-') << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -143,9 +143,9 @@ void ResourceManager::ShowStatistics() {
             SQLINTEGER count; SQLBIGINT totalSize; SQLLEN cbSize;
             SQLGetData(hStmt, 1, SQL_C_LONG, &count, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_SBIGINT, &totalSize, 0, &cbSize);
-            cout << "\n=== STATISTICS ===" << endl;
-            cout << "Total files: " << count << endl;
-            cout << "Total weight: " << (cbSize == SQL_NULL_DATA ? 0 : totalSize) << " bytes" << endl;
+            cout << "\n=== СТТСТ ===" << endl;
+            cout << "сего файлов: " << count << endl;
+            cout << "бщий вес: " << (cbSize == SQL_NULL_DATA ? 0 : totalSize) << " байт" << endl;
         }
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
@@ -159,8 +159,8 @@ bool ResourceManager::SoftDelete(int resourceId) {
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
     SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &resourceId, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "[SUCCESS] Moved to Trash (ID: " << resourceId << ")" << endl;
-        LogAction("Moved file to trash, ID: " + to_string(resourceId));
+        cout << "[СХ] айл перемещен в корзину (ID: " << resourceId << ")" << endl;
+        LogAction("айл перемещен в корзину, ID: " + to_string(resourceId));
         SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
         return true;
     }
@@ -176,8 +176,8 @@ bool ResourceManager::RestoreFile(int resourceId) {
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
     SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &resourceId, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "[SUCCESS] Restored file (ID: " << resourceId << ")" << endl;
-        LogAction("Restored file from trash, ID: " + to_string(resourceId));
+        cout << "[СХ] айл восстановлен (ID: " << resourceId << ")" << endl;
+        LogAction("айл восстановлен из корзины, ID: " + to_string(resourceId));
         SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
         return true;
     }
@@ -190,8 +190,8 @@ void ResourceManager::ShowRecycleBin() {
     SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
     SQLWCHAR* query = (SQLWCHAR*)L"SELECT ResourceID, Name FROM Resources WHERE isDeleted = 1";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
-        cout << "\n=== RECYCLE BIN ===" << endl;
-        cout << left << setw(5) << "ID" << setw(20) << "Name" << endl;
+        cout << "\n===  ===" << endl;
+        cout << left << setw(5) << "ID" << setw(20) << "мя" << endl;
         SQLINTEGER id; SQLWCHAR name[256];
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
@@ -209,8 +209,8 @@ void ResourceManager::CleanupOldData() {
     SQLWCHAR* query = (SQLWCHAR*)L"DELETE FROM Resources WHERE DATEDIFF(day, CreatedAt, GETDATE()) > 30 AND isDeleted = 1";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
         SQLLEN count; SQLRowCount(hStmt, &count);
-        cout << "[CLEANUP] Deleted " << count << " old files." << endl;
-        LogAction("Cleanup: deleted " + to_string(count) + " old files.");
+        cout << "[СТ] далено " << count << " старых файлов." << endl;
+        LogAction("чистка: удалено " + to_string(count) + " старых файлов.");
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
 }
@@ -225,8 +225,8 @@ void ResourceManager::GetFilesPaged(int pageNum, int pageSize) {
     SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &offset, 0, NULL);
     SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &pageSize, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "\n--- PAGE " << pageNum << " ---" << endl;
-        cout << left << setw(5) << "ID" << setw(20) << "Name" << setw(10) << "Size" << endl;
+        cout << "\n--- СТ " << pageNum << " ---" << endl;
+        cout << left << setw(5) << "ID" << setw(20) << "мя" << setw(10) << "азмер" << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
@@ -245,7 +245,7 @@ void ResourceManager::ExportToCSV(const string& filename) {
     SQLWCHAR* query = (SQLWCHAR*)L"SELECT ResourceID, Name, Size, CreatedAt FROM Resources";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
         ofstream file(filename);
-        file << "ID;Name;Size;Date" << endl;
+        file << "ID;мя;азмер;ата" << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size; SQLWCHAR date[64];
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
@@ -257,7 +257,7 @@ void ResourceManager::ExportToCSV(const string& filename) {
             file << id << ";" << sn << ";" << size << ";" << sd << endl;
         }
         file.close();
-        cout << "[EXPORT] CSV saved to " << filename << endl;
+        cout << "[СТ] CSV сохранен в " << filename << endl;
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
 }
@@ -268,7 +268,7 @@ void ResourceManager::ExportReport(const string& filename) {
     SQLWCHAR* query = (SQLWCHAR*)L"SELECT ResourceID, Name, Size FROM Resources WHERE isDeleted = 0";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
         ofstream file(filename);
-        file << left << setw(5) << "ID" << setw(25) << "Resource Name" << setw(15) << "Size (bytes)" << endl;
+        file << left << setw(5) << "ID" << setw(25) << "мя ресурса" << setw(15) << "азмер (байт)" << endl;
         file << string(45, '=') << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -279,7 +279,7 @@ void ResourceManager::ExportReport(const string& filename) {
             file << left << setw(5) << id << setw(25) << n << setw(15) << size << endl;
         }
         file.close();
-        cout << "[REPORT] Saved to " << filename << endl;
+        cout << "[ТТ] ро отчет сохранен в " << filename << endl;
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
 }
@@ -320,14 +320,14 @@ void ResourceManager::IntelligentSearch(const string& query) {
         SQLBindParameter(hStmt, i + 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wWords[i].length(), 0, (SQLPOINTER)wWords[i].c_str(), 0, NULL);
     }
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "\n--- SEARCH RESULTS ---" << endl;
+        cout << "\n--- ЬТТЫ С ---" << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
             wstring wn(name); string n(wn.begin(), wn.end());
-            cout << "[ID: " << id << "] " << n << " (" << size << " bytes)" << endl;
+            cout << "[ID: " << id << "] " << n << " (" << size << " байт)" << endl;
         }
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
@@ -339,6 +339,6 @@ void ResourceManager::PrintError(SQLSMALLINT handleType, SQLHANDLE handle) {
     SQLSMALLINT msgLen;
     int i = 1;
     while (SQLGetDiagRecW(handleType, handle, i++, state, &native, msg, SQL_MAX_MESSAGE_LENGTH, &msgLen) != SQL_NO_DATA) {
-        wcout << L"SQL Error: " << state << L" : " << msg << endl;
+        wcout << L"SQL шибка: " << state << L" : " << msg << endl;
     }
 }
