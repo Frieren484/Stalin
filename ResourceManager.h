@@ -29,4 +29,13 @@ public:
 
     // Group B: Validations & Cleanup
     void CleanupOldData();
+
+    // Group C: Interface & UX
+    void GetFilesPaged(int pageNum, int pageSize = 10);
+    void ExportToCSV(const std::string& filename);
+    int GetMaxNameLength();
+    
+    // Group E: Reporting & Search
+    void ExportReport(const std::string& filename);
+    void IntelligentSearch(const std::string& query);
 };
