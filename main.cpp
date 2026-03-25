@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <vector>
 #include <windows.h>
@@ -7,12 +7,12 @@
 
 using namespace std;
 
-// Color handling
+// ункция для установки цвета текста
 void SetColor(int color) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
-// Input validation
+// алидация числового ввода
 int GetIntInput() {
     string input;
     int value;
@@ -22,38 +22,44 @@ int GetIntInput() {
             value = stoi(input);
             return value;
         } catch (...) {
-            SetColor(4); // RED
-            cout << "[ERROR] Please enter a number: ";
-            SetColor(7); // WHITE
+            SetColor(4); // расный
+            cout << "[Ш] ожалуйста, введите число: ";
+            SetColor(7); // елый
         }
     }
 }
 
 void ShowMenu() {
-    cout << "\n=== ByteKeeper: DAM System ===" << endl;
-    cout << "1. Add File" << endl;
-    cout << "2. List Files (Sort)" << endl;
-    cout << "3. Search by Name (LIKE)" << endl;
-    cout << "4. Intelligent Search" << endl;
-    cout << "5. Statistics (COUNT/SUM)" << endl;
-    cout << "6. Delete File (Soft Delete)" << endl;
-    cout << "7. Recycle Bin (Restore)" << endl;
-    cout << "8. Pagination" << endl;
-    cout << "9. Export (CSV/Report)" << endl;
-    cout << "10. Cleanup Old Data" << endl;
-    cout << "11. Server Ping" << endl;
-    cout << "12. Change Database" << endl;
-    cout << "0. Exit" << endl;
-    cout << "Choice: ";
+    cout << "\n=== ByteKeeper: Система управления активами ===" << endl;
+    cout << "1. обавить новый ресурс" << endl;
+    cout << "2. Список всех ресурсов (Сортировка)" << endl;
+    cout << "3. оиск по имени (LIKE)" << endl;
+    cout << "4. нтеллектуальный многословный поиск" << endl;
+    cout << "5. Статистика (оличество / ес)" << endl;
+    cout << "6. далить в корзину (Soft Delete)" << endl;
+    cout << "7. абота с корзиной (осстановление)" << endl;
+    cout << "8. остраничный просмотр (Pagination)" << endl;
+    cout << "9. кспорт данных (CSV / тчет)" << endl;
+    cout << "10. чистка старых данных (>30 дней)" << endl;
+    cout << "11. роверка связи с сервером (Ping)" << endl;
+    cout << "12. Сменить текущую базу данных" << endl;
+    cout << "0. ыйти из программы" << endl;
+    cout << "аш выбор: ";
 }
 
 int main() {
+    // ключаем поддержку русского языка в консоли
+    setlocale(LC_ALL, "Russian");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+
     DBManager db;
 
     if (!db.Connect("ByteKeeperDB")) {
         SetColor(4);
-        cout << "Critical Error: Could not connect to DB." << endl;
+        cout << "ритическая ошибка: невозможно подключиться к ." << endl;
         SetColor(7);
+        system("pause");
         return 1;
     }
 
@@ -67,27 +73,27 @@ int main() {
         switch (choice) {
         case 1: {
             string name; long long size; int cid, oid;
-            cout << "Name: "; cin >> name;
-            cout << "Size: "; size = GetIntInput();
-            cout << "Cat ID: "; cid = GetIntInput();
-            cout << "Owner ID: "; oid = GetIntInput();
+            cout << "мя файла (с расширением): "; cin >> name;
+            cout << "азмер в байтах: "; size = GetIntInput();
+            cout << "ID категории: "; cid = GetIntInput();
+            cout << "ID владельца: "; oid = GetIntInput();
             rm.AddFile(name, size, cid, oid);
             break;
         }
         case 2: {
-            cout << "Sort by (Name/Size/ID): ";
+            cout << "Сортировать по (Name/Size/ID): ";
             string s; cin >> s;
             rm.GetFiles(s);
             break;
         }
         case 3: {
-            cout << "Part of name: ";
+            cout << "ведите имя или его часть: ";
             string p; cin >> p;
             rm.SearchByName(p);
             break;
         }
         case 4: {
-            cout << "Keywords: ";
+            cout << "ведите слова через пробел: ";
             string q; cin.ignore(); getline(cin, q);
             rm.IntelligentSearch(q);
             break;
@@ -96,26 +102,26 @@ int main() {
             rm.ShowStatistics();
             break;
         case 6: {
-            cout << "File ID to delete: ";
+            cout << "ведите ID ресурса для удаления: ";
             int id = GetIntInput();
             rm.SoftDelete(id);
             break;
         }
         case 7: {
             rm.ShowRecycleBin();
-            cout << "Restore ID (0 to cancel): ";
+            cout << "ведите ID для восстановления (0 для отмены): ";
             int id = GetIntInput();
             if (id > 0) rm.RestoreFile(id);
             break;
         }
         case 8: {
-            cout << "Page number: ";
+            cout << "ведите номер страницы: ";
             int p = GetIntInput();
             rm.GetFilesPaged(p);
             break;
         }
         case 9: {
-            cout << "1. CSV\n2. Report\nChoice: ";
+            cout << "1. кспорт в CSV (export.csv)\n2. Текстовый отчет (report.txt)\nыбор: ";
             int ex = GetIntInput();
             if (ex == 1) rm.ExportToCSV("export.csv");
             else rm.ExportReport("report.txt");
@@ -128,7 +134,7 @@ int main() {
             db.Ping();
             break;
         case 12: {
-            cout << "New DB Name: ";
+            cout << "ведите имя новой : ";
             string nb; cin >> nb;
             if (db.ChangeDatabase(nb)) {
                 rm = ResourceManager(db.GetConnection());
@@ -136,11 +142,11 @@ int main() {
             break;
         }
         case 0:
-            cout << "Goodbye!" << endl;
+            cout << "авершение работы..." << endl;
             break;
         default:
             SetColor(4);
-            cout << "Invalid choice." << endl;
+            cout << "екорректный выбор. овторите ввод." << endl;
             SetColor(7);
         }
     }
