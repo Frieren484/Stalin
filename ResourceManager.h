@@ -16,10 +16,10 @@ private:
 public:
     ResourceManager(SQLHDBC connection);
     
-    // Core operations
+    // Основные операции
     bool AddFile(const std::string& name, long long size, int catId, int ownerId);
     
-    // Group A: Advanced SQL and Logic
+    // Группа А: Продвинутый SQL и Логика
     void SearchByName(const std::string& partName);
     void GetFiles(const std::string& orderBy = "Name");
     void ShowStatistics();
@@ -27,15 +27,18 @@ public:
     bool RestoreFile(int resourceId);
     void ShowRecycleBin();
 
-    // Group B: Validations & Cleanup
+    // Группа Б: Валидация и Очистка
     void CleanupOldData();
 
-    // Group C: Interface & UX
+    // Группа В: Интерфейс и UX
     void GetFilesPaged(int pageNum, int pageSize = 10);
     void ExportToCSV(const std::string& filename);
     int GetMaxNameLength();
     
-    // Group E: Reporting & Search
+    // Группа Д: Отчетность и поиск
     void ExportReport(const std::string& filename);
     void IntelligentSearch(const std::string& query);
+
+    // Целостность
+    bool DeleteCategory(int catId);
 };

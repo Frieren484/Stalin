@@ -222,8 +222,8 @@ void ResourceManager::GetFilesPaged(int pageNum, int pageSize) {
     string query = "SELECT ResourceID, Name, Size FROM Resources WHERE isDeleted = 0 ORDER BY ResourceID OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
     wstring wQuery(query.begin(), query.end());
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
-    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &offset, 0, NULL);
     SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &pageSize, 0, NULL);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &offset, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
         cout << "\n--- СТ " << pageNum << " ---" << endl;
         cout << left << setw(5) << "ID" << setw(20) << "мя" << setw(10) << "азмер" << endl;
@@ -341,4 +341,41 @@ void ResourceManager::PrintError(SQLSMALLINT handleType, SQLHANDLE handle) {
     while (SQLGetDiagRecW(handleType, handle, i++, state, &native, msg, SQL_MAX_MESSAGE_LENGTH, &msgLen) != SQL_NO_DATA) {
         wcout << L"SQL шибка: " << state << L" : " << msg << endl;
     }
+}
+
+bool ResourceManager::DeleteCategory(int catId) {
+    SQLHSTMT hStmt;
+    SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
+    
+    // роверка целостности: есть ли файлы в этой категории?
+    string checkQuery = "SELECT COUNT(*) FROM Resources WHERE CategoryID = ? AND isDeleted = 0";
+    wstring wCheck(checkQuery.begin(), checkQuery.end());
+    SQLPrepareW(hStmt, (SQLWCHAR*)wCheck.c_str(), SQL_NTS);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &catId, 0, NULL);
+    SQLExecute(hStmt);
+    SQLINTEGER count = 0;
+    if (SQLFetch(hStmt) == SQL_SUCCESS) {
+        SQLGetData(hStmt, 1, SQL_C_LONG, &count, 0, NULL);
+    }
+    SQLFreeStmt(hStmt, SQL_CLOSE);
+
+    if (count > 0) {
+        cerr << "[] атегория содержит активные файлы! даление запрещено." << endl;
+        SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
+        return false;
+    }
+
+    string delQuery = "DELETE FROM Categories WHERE CategoryID = ?";
+    wstring wDel(delQuery.begin(), delQuery.end());
+    SQLPrepareW(hStmt, (SQLWCHAR*)wDel.c_str(), SQL_NTS);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &catId, 0, NULL);
+    
+    if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
+        cout << "[СХ] атегория удалена." << endl;
+        LogAction("далена категория ID: " + to_string(catId));
+        SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
+        return true;
+    }
+    SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
+    return false;
 }
