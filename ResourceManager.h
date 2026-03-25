@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <windows.h>
 #include <sql.h>
 #include <sqlext.h>
@@ -6,6 +6,10 @@
 #include <vector>
 #include <regex>
 
+/**
+ * ласс ResourceManager
+ * твечает за логику работы с цифровыми активами в .
+ */
 class ResourceManager {
 private:
     SQLHDBC hDbc;
@@ -16,10 +20,10 @@ private:
 public:
     ResourceManager(SQLHDBC connection);
     
-    // Основные операции
+    // сновные операции
     bool AddFile(const std::string& name, long long size, int catId, int ownerId);
     
-    // Группа А: Продвинутый SQL и Логика
+    // руппа : родвинутый SQL
     void SearchByName(const std::string& partName);
     void GetFiles(const std::string& orderBy = "Name");
     void ShowStatistics();
@@ -27,18 +31,18 @@ public:
     bool RestoreFile(int resourceId);
     void ShowRecycleBin();
 
-    // Группа Б: Валидация и Очистка
+    // руппа : алидация
     void CleanupOldData();
 
-    // Группа В: Интерфейс и UX
+    // руппа : нтерфейс и UX
     void GetFilesPaged(int pageNum, int pageSize = 10);
     void ExportToCSV(const std::string& filename);
     int GetMaxNameLength();
     
-    // Группа Д: Отчетность и поиск
+    // руппа : оиск и отчетность
     void ExportReport(const std::string& filename);
     void IntelligentSearch(const std::string& query);
 
-    // Целостность
+    // руппа : елостность
     bool DeleteCategory(int catId);
 };
