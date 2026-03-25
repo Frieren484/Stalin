@@ -61,18 +61,16 @@ bool DBManager::Ping() {
         return false;
     }
 
-    SQLWCHAR state[6], msg[SQL_MAX_MESSAGE_LENGTH];
-    SQLINTEGER native;
-    SQLSMALLINT msgLen;
-    SQLRETURN ret = SQLGetDiagRecW(SQL_HANDLE_DBC, hDbc, 1, state, &native, msg, SQL_MAX_MESSAGE_LENGTH, &msgLen);
+    SQLWCHAR serverName[128], serverVer[128];
+    SQLSMALLINT len;
 
-    if (ret == SQL_NO_DATA) {
-        cout << "[PING] Соединение активно." << endl;
-        return true;
-    } else {
-        wcout << L"[PING] шибка! Состояние: " << state << L" : " << msg << endl;
-        return false;
-    }
+    // асширенная информация через SQLGetInfoW (Commit 14)
+    SQLGetInfoW(hDbc, SQL_DBMS_NAME, serverName, 128, &len);
+    SQLGetInfoW(hDbc, SQL_DBMS_VER, serverVer, 128, &len);
+
+    wcout << L"[PING] Сервер: " << serverName << L" (ерсия: " << serverVer << L")" << endl;
+    cout << "[PING] Соединение активно." << endl;
+    return true;
 }
 
 void DBManager::PrintError(SQLSMALLINT handleType, SQLHANDLE handle) {
