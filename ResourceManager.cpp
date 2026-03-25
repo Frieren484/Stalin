@@ -5,6 +5,7 @@
 #include <regex>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
 using namespace std;
 
@@ -268,15 +269,19 @@ void ResourceManager::ExportReport(const string& filename) {
     SQLWCHAR* query = (SQLWCHAR*)L"SELECT ResourceID, Name, Size FROM Resources WHERE isDeleted = 0";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
         ofstream file(filename);
-        file << left << setw(5) << "ID" << setw(25) << "мя ресурса" << setw(15) << "азмер (байт)" << endl;
-        file << string(45, '=') << endl;
+        time_t now = time(0);
+        char* dt = ctime(&now);
+        file << "=== ТТ  СС ByteKeeper ===" << endl;
+        file << "ата формирования: " << dt << endl;
+        file << left << setw(5) << "ID" << setw(30) << "мя ресурса" << setw(15) << "азмер (байт)" << endl;
+        file << string(55, '=') << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
             wstring wn(name); string n(wn.begin(), wn.end());
-            file << left << setw(5) << id << setw(25) << n << setw(15) << size << endl;
+            file << left << setw(5) << id << setw(30) << n << setw(15) << size << endl;
         }
         file.close();
         cout << "[ТТ] ро отчет сохранен в " << filename << endl;
