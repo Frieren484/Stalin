@@ -18,7 +18,7 @@ void ResourceManager::LogAction(const string& description) {
     wstring wQuery(query.begin(), query.end());
     wstring wDesc(description.begin(), description.end());
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
-    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wDesc.length(), 0, (SQLPOINTER)wDesc.c_str(), 0, NULL);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wDesc.length(), 0, (SQLPOINTER)wDesc.c_str(), 0, NULL);
     SQLExecute(hStmt);
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
 }
@@ -30,7 +30,7 @@ bool ResourceManager::IsDuplicate(const string& name) {
     wstring wQuery(query.begin(), query.end());
     wstring wName(name.begin(), name.end());
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
-    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wName.length(), 0, (SQLPOINTER)wName.c_str(), 0, NULL);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wName.length(), 0, (SQLPOINTER)wName.c_str(), 0, NULL);
     SQLExecute(hStmt);
     SQLINTEGER count = 0;
     if (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -68,7 +68,7 @@ bool ResourceManager::AddFile(const string& name, long long size, int catId, int
     wstring wQuery(query.begin(), query.end());
     wstring wName(name.begin(), name.end());
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
-    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wName.length(), 0, (SQLPOINTER)wName.c_str(), 0, NULL);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wName.length(), 0, (SQLPOINTER)wName.c_str(), 0, NULL);
     SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &size, 0, NULL);
     SQLBindParameter(hStmt, 3, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &catId, 0, NULL);
     SQLBindParameter(hStmt, 4, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &ownerId, 0, NULL);
@@ -90,7 +90,7 @@ void ResourceManager::SearchByName(const string& partName) {
     string pattern = "%" + partName + "%";
     wstring wPattern(pattern.begin(), pattern.end());
     SQLPrepareW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS);
-    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wPattern.length(), 0, (SQLPOINTER)wPattern.c_str(), 0, NULL);
+    SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wPattern.length(), 0, (SQLPOINTER)wPattern.c_str(), 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
         int w = GetMaxNameLength() + 5;
         if (w < 20) w = 20;
@@ -101,7 +101,7 @@ void ResourceManager::SearchByName(const string& partName) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             if (n.length() > 15) n = n.substr(0, 12) + "...";
             cout << left << setw(5) << id << setw(w) << n << setw(10) << size << endl;
         }
@@ -127,7 +127,7 @@ void ResourceManager::GetFiles(const string& orderBy) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             if (n.length() > 15) n = n.substr(0, 12) + "...";
             cout << left << setw(5) << id << setw(w) << n << setw(10) << size << endl;
         }
@@ -197,7 +197,7 @@ void ResourceManager::ShowRecycleBin() {
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             cout << left << setw(5) << id << setw(20) << n << endl;
         }
     }
@@ -233,7 +233,7 @@ void ResourceManager::GetFilesPaged(int pageNum, int pageSize) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             cout << left << setw(5) << id << setw(20) << n << setw(10) << size << endl;
         }
     }
@@ -253,8 +253,8 @@ void ResourceManager::ExportToCSV(const string& filename) {
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
             SQLGetData(hStmt, 4, SQL_C_WCHAR, date, sizeof(date), NULL);
-            wstring wn(name); string sn(wn.begin(), wn.end());
-            wstring wd(date); string sd(wd.begin(), wd.end());
+            wstring wn(name); string sn; for(auto wc : wn) sn += (char)wc;
+            wstring wd(date); string sd; for(auto wc : wd) sd += (char)wc;
             file << id << ";" << sn << ";" << size << ";" << sd << endl;
         }
         file.close();
@@ -280,7 +280,7 @@ void ResourceManager::ExportReport(const string& filename) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             file << left << setw(5) << id << setw(30) << n << setw(15) << size << endl;
         }
         file.close();
@@ -322,7 +322,7 @@ void ResourceManager::IntelligentSearch(const string& query) {
     vector<wstring> wWords;
     for (size_t i = 0; i < words.size(); ++i) {
         wWords.push_back(wstring(words[i].begin(), words[i].end()));
-        SQLBindParameter(hStmt, i + 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, wWords[i].length(), 0, (SQLPOINTER)wWords[i].c_str(), 0, NULL);
+        SQLBindParameter(hStmt, (SQLUSMALLINT)(i + 1), SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wWords[i].length(), 0, (SQLPOINTER)wWords[i].c_str(), 0, NULL);
     }
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
         cout << "\n--- ЬТТЫ С ---" << endl;
@@ -331,7 +331,7 @@ void ResourceManager::IntelligentSearch(const string& query) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
-            wstring wn(name); string n(wn.begin(), wn.end());
+            wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
             cout << "[ID: " << id << "] " << n << " (" << size << " байт)" << endl;
         }
     }
