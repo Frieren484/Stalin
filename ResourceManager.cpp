@@ -6,8 +6,14 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
+#include <windows.h>
 
 using namespace std;
+
+// омощник для цвета внутри RM
+void SetRMColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
 
 ResourceManager::ResourceManager(SQLHDBC connection) : hDbc(connection) {}
 
@@ -43,7 +49,7 @@ bool ResourceManager::IsDuplicate(const string& name) {
 bool ResourceManager::AddFile(const string& name, long long size, int catId, int ownerId) {
     regex sysSymbols("[\\\\/:*?\"<>|]");
     if (regex_search(name, sysSymbols)) {
-        cerr << "[Ш] мя содержит недопустимые символы!" << endl;
+        SetRMColor(4); cerr << "[Ш] мя содержит недопустимые символы!" << endl; SetRMColor(7);
         return false;
     }
     vector<string> whitelist = {".exe", ".txt", ".pdf"};
@@ -55,11 +61,11 @@ bool ResourceManager::AddFile(const string& name, long long size, int catId, int
         }
     }
     if (!validExt) {
-        cerr << "[Ш] асширение запрещено! опустимы: .exe, .txt, .pdf" << endl;
+        SetRMColor(4); cerr << "[Ш] асширение запрещено! опустимы: .exe, .txt, .pdf" << endl; SetRMColor(7);
         return false;
     }
     if (IsDuplicate(name)) {
-        cerr << "[Ш] айл с таким именем уже существует!" << endl;
+        SetRMColor(4); cerr << "[Ш] айл с таким именем уже существует!" << endl; SetRMColor(7);
         return false;
     }
     SQLHSTMT hStmt;
@@ -85,7 +91,7 @@ bool ResourceManager::AddFile(const string& name, long long size, int catId, int
 void ResourceManager::SearchByName(const string& partName) {
     SQLHSTMT hStmt;
     SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
-    string query = "SELECT ResourceID, Name, Size FROM Resources WHERE Name LIKE ? AND isDeleted = 0";
+    string query = "SELECT r.ResourceID, r.Name, r.Size, c.CategoryName FROM Resources r JOIN Categories c ON r.CategoryID = c.CategoryID WHERE r.Name LIKE ? AND r.isDeleted = 0";
     wstring wQuery(query.begin(), query.end());
     string pattern = "%" + partName + "%";
     wstring wPattern(pattern.begin(), pattern.end());
@@ -94,16 +100,20 @@ void ResourceManager::SearchByName(const string& partName) {
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
         int w = GetMaxNameLength() + 5;
         if (w < 20) w = 20;
-        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << endl;
-        cout << string(w + 15, '-') << endl;
-        SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
+        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << setw(15) << "FOLDER" << endl;
+        cout << string(w + 30, '-') << endl;
+        SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size; SQLWCHAR cat[128];
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
+            SQLGetData(hStmt, 4, SQL_C_WCHAR, cat, sizeof(cat), NULL);
             wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
+            wstring wc(cat); string c; for(auto wcc : wc) c += (char)wcc;
             if (n.length() > 15) n = n.substr(0, 12) + "...";
-            cout << left << setw(5) << id << setw(w) << n << setw(10) << size << endl;
+            cout << left << setw(5) << id << setw(w) << n << setw(10) << size;
+            SetRMColor(6); cout << setw(15) << (c.length() > 12 ? c.substr(0, 9) + "..." : c); SetRMColor(7);
+            cout << endl;
         }
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
@@ -112,24 +122,28 @@ void ResourceManager::SearchByName(const string& partName) {
 void ResourceManager::GetFiles(const string& orderBy) {
     SQLHSTMT hStmt;
     SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
-    string col = "Name";
-    if (orderBy == "Size") col = "Size";
-    else if (orderBy == "ID") col = "ResourceID";
-    string query = "SELECT ResourceID, Name, Size FROM Resources WHERE isDeleted = 0 ORDER BY " + col;
+    string col = "r.Name";
+    if (orderBy == "Size") col = "r.Size";
+    else if (orderBy == "ID") col = "r.ResourceID";
+    string query = "SELECT r.ResourceID, r.Name, r.Size, c.CategoryName FROM Resources r JOIN Categories c ON r.CategoryID = c.CategoryID WHERE r.isDeleted = 0 ORDER BY " + col;
     wstring wQuery(query.begin(), query.end());
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, (SQLWCHAR*)wQuery.c_str(), SQL_NTS))) {
         int w = GetMaxNameLength() + 5;
         if (w < 20) w = 20;
-        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << endl;
-        cout << string(w + 15, '-') << endl;
-        SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
+        cout << left << setw(5) << "ID" << setw(w) << "мя" << setw(10) << "азмер" << setw(15) << "FOLDER" << endl;
+        cout << string(w + 30, '-') << endl;
+        SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size; SQLWCHAR cat[128];
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_WCHAR, name, sizeof(name), NULL);
             SQLGetData(hStmt, 3, SQL_C_SBIGINT, &size, 0, NULL);
+            SQLGetData(hStmt, 4, SQL_C_WCHAR, cat, sizeof(cat), NULL);
             wstring wn(name); string n; for(auto wc : wn) n += (char)wc;
+            wstring wc(cat); string c; for(auto wcc : wc) c += (char)wcc;
             if (n.length() > 15) n = n.substr(0, 12) + "...";
-            cout << left << setw(5) << id << setw(w) << n << setw(10) << size << endl;
+            cout << left << setw(5) << id << setw(w) << n << setw(10) << size;
+            SetRMColor(6); cout << setw(15) << (c.length() > 12 ? c.substr(0, 9) + "..." : c); SetRMColor(7);
+            cout << endl;
         }
     }
     SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
@@ -144,7 +158,7 @@ void ResourceManager::ShowStatistics() {
             SQLINTEGER count; SQLBIGINT totalSize; SQLLEN cbSize;
             SQLGetData(hStmt, 1, SQL_C_LONG, &count, 0, NULL);
             SQLGetData(hStmt, 2, SQL_C_SBIGINT, &totalSize, 0, &cbSize);
-            cout << "\n=== СТТСТ ===" << endl;
+            SetRMColor(6); cout << "\n=== СТТСТ ===" << endl; SetRMColor(7);
             cout << "сего файлов: " << count << endl;
             cout << "бщий вес: " << (cbSize == SQL_NULL_DATA ? 0 : totalSize) << " байт" << endl;
         }
@@ -191,7 +205,7 @@ void ResourceManager::ShowRecycleBin() {
     SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt);
     SQLWCHAR* query = (SQLWCHAR*)L"SELECT ResourceID, Name FROM Resources WHERE isDeleted = 1";
     if (SQL_SUCCEEDED(SQLExecDirectW(hStmt, query, SQL_NTS))) {
-        cout << "\n===  ===" << endl;
+        SetRMColor(6); cout << "\n===  ===" << endl; SetRMColor(7);
         cout << left << setw(5) << "ID" << setw(20) << "мя" << endl;
         SQLINTEGER id; SQLWCHAR name[256];
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -226,7 +240,7 @@ void ResourceManager::GetFilesPaged(int pageNum, int pageSize) {
     SQLBindParameter(hStmt, 2, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &pageSize, 0, NULL);
     SQLBindParameter(hStmt, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &offset, 0, NULL);
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "\n--- СТ " << pageNum << " ---" << endl;
+        SetRMColor(6); cout << "\n--- СТ " << pageNum << " ---" << endl; SetRMColor(7);
         cout << left << setw(5) << "ID" << setw(20) << "мя" << setw(10) << "азмер" << endl;
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
@@ -325,7 +339,7 @@ void ResourceManager::IntelligentSearch(const string& query) {
         SQLBindParameter(hStmt, (SQLUSMALLINT)(i + 1), SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, (SQLULEN)wWords[i].length(), 0, (SQLPOINTER)wWords[i].c_str(), 0, NULL);
     }
     if (SQL_SUCCEEDED(SQLExecute(hStmt))) {
-        cout << "\n--- ЬТТЫ С ---" << endl;
+        SetRMColor(6); cout << "\n--- ЬТТЫ С ---" << endl; SetRMColor(7);
         SQLINTEGER id; SQLWCHAR name[256]; SQLBIGINT size;
         while (SQLFetch(hStmt) == SQL_SUCCESS) {
             SQLGetData(hStmt, 1, SQL_C_LONG, &id, 0, NULL);
@@ -344,7 +358,7 @@ void ResourceManager::PrintError(SQLSMALLINT handleType, SQLHANDLE handle) {
     SQLSMALLINT msgLen;
     int i = 1;
     while (SQLGetDiagRecW(handleType, handle, i++, state, &native, msg, SQL_MAX_MESSAGE_LENGTH, &msgLen) != SQL_NO_DATA) {
-        wcout << L"SQL шибка: " << state << L" : " << msg << endl;
+        SetRMColor(4); wcout << L"SQL шибка: " << state << L" : " << msg << endl; SetRMColor(7);
     }
 }
 
@@ -365,7 +379,7 @@ bool ResourceManager::DeleteCategory(int catId) {
     SQLFreeStmt(hStmt, SQL_CLOSE);
 
     if (count > 0) {
-        cerr << "[] атегория содержит активные файлы! даление запрещено." << endl;
+        SetRMColor(4); cerr << "[] атегория содержит активные файлы! даление запрещено." << endl; SetRMColor(7);
         SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
         return false;
     }
